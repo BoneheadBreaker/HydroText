@@ -12,7 +12,7 @@ using Microsoft.Win32;
 using System.IO;
 using System.IO.Enumeration;
 
-namespace CrillyText
+namespace HydroText
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml
