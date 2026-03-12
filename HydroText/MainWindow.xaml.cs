@@ -1,25 +1,16 @@
-﻿using System.Text;
+﻿using System;
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using Microsoft.Win32;
-using System.IO;
-using System.IO.Enumeration;
 
 namespace HydroText
 {
-    /// <summary>
-    /// Interaction logic for MainWindow.xaml
-    /// </summary>
     public partial class MainWindow : Window
     {
-        string filename = ""; // define up here so everywhere can access it
+        private string filename = "";
+
         public MainWindow()
         {
             InitializeComponent();
@@ -27,69 +18,134 @@ namespace HydroText
 
         private void SaveFile()
         {
-            if (!string.IsNullOrEmpty(filename))
-            {
-                try
-                {
-                    File.WriteAllText(filename, MainTextBox.Text);
-                }
-                catch (IOException ex)
-                {
-                    MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
-            }
-            else
+            if (string.IsNullOrEmpty(filename))
             {
                 SaveAsFile();
+                return;
+            }
+
+            string ext = Path.GetExtension(filename).ToLower();
+            switch (ext)
+            {
+                case ".txt": SaveAsText(); break;
+                case ".rtf": SaveAsRtf(); break;
+                case ".hdt": SaveAsCustom(); break;
+                default: SaveAsText(); break;
             }
         }
-        
+
         private void SaveAsFile()
         {
-            SaveFileDialog dlg = new SaveFileDialog();
-            dlg.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*";
-            dlg.Title = "Save As";
-
-            if (dlg.ShowDialog() == true)
+            SaveFileDialog dlg = new SaveFileDialog
             {
-                filename = dlg.FileName; // update the current filename
-                try
+                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|All Files (*.*)|*.*",
+                Title = "Save As",
+                DefaultExt = "txt"
+            };
+
+            bool? result = dlg.ShowDialog();
+            if (result != true) return; // user canceled
+
+            filename = dlg.FileName;
+
+            // Add default extension if user didnt type one
+            string ext = Path.GetExtension(filename).ToLower();
+            if (string.IsNullOrEmpty(ext))
+            {
+                switch (dlg.FilterIndex)
                 {
-                    File.WriteAllText(filename, MainTextBox.Text);
-                    MessageBox.Show("File saved successfully.", "Save As", MessageBoxButton.OK, MessageBoxImage.Information);
+                    case 1: ext = ".txt"; break;
+                    case 2: ext = ".rtf"; break;
+                    case 3: ext = ".hdt"; break;
+                    default: ext = ".txt"; break;
                 }
-                catch (IOException ex)
-                {
-                    MessageBox.Show($"Error saving file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
-                }
+                filename += ext;
+            }
+
+            SaveFile();
+        }
+
+
+        private void SaveAsText()
+        {
+            try
+            {
+                TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+                File.WriteAllText(filename, range.Text);
+                MessageBox.Show("File saved as TXT successfully.", "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving TXT file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
-        private void MainTextBox_TextChanged(object sender, TextChangedEventArgs e)
+        private void SaveAsRtf()
         {
-
+            try
+            {
+                TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+                using (FileStream fs = new FileStream(filename, FileMode.Create))
+                {
+                    range.Save(fs, DataFormats.Rtf);
+                }
+                MessageBox.Show("File saved as RTF successfully.", "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving RTF file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
         }
 
-        private void MenuItem_Click(object sender, RoutedEventArgs e) // open folder clicked
+        private void SaveAsCustom()
         {
-            OpenFileDialog dlg = new OpenFileDialog(); // creates an instance of the open file dialog class
-            dlg.Filter = "Text Files (*.txt)|*.txt|All Files (*.*)|*.*"; // what can be clicked syntax: "Description|Extension" 
-            dlg.Title = "Open Text File"; // Title of the window
-
-            bool? userClickedOk = dlg.ShowDialog(); // Show the dialog and wait for user to click OK or Cancel
-
-            if (userClickedOk == true)
+            try
             {
-                filename = dlg.FileName; // Full path to the file
-                try
+                TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+                using (FileStream fs = new FileStream(filename, FileMode.Create))
                 {
-                    string fileText = File.ReadAllText(filename); // opens file and reads all text
-                    MainTextBox.Text = fileText;
+                    range.Save(fs, DataFormats.Xaml);
                 }
-                catch (IOException ex)
+                MessageBox.Show("File saved as Hydro Text successfully.", "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving Hydro Text file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void OpenFile_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog dlg = new OpenFileDialog
+            {
+                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|All Files (*.*)|*.*",
+                Title = "Open File"
+            };
+
+            bool? result = dlg.ShowDialog();
+            if (result != true) return;
+
+            filename = dlg.FileName;
+
+            try
+            {
+                TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+
+                using (FileStream fs = new FileStream(filename, FileMode.Open))
                 {
-                    MessageBox.Show($"Error reading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error); // if it runs into an error it'll display it
+                    string ext = Path.GetExtension(filename).ToLower();
+
+                    if (ext == ".rtf")
+                        range.Load(fs, DataFormats.Rtf);
+                    else if (ext == ".hdt")
+                        range.Load(fs, DataFormats.Xaml);
+                    else
+                        range.Load(fs, DataFormats.Text);
                 }
+            }
+            catch (Exception ex) // catch everything to avoid crashing
+            {
+                MessageBox.Show($"Error reading file: {ex.Message} ", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
