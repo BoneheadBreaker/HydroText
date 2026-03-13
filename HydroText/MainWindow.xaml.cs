@@ -4,6 +4,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Documents;
 using Microsoft.Win32;
+using MyNet.Xaml.Html;
 
 namespace HydroText
 {
@@ -27,10 +28,11 @@ namespace HydroText
             string ext = Path.GetExtension(filename).ToLower();
             switch (ext)
             {
-                case ".txt": SaveAsText(); break;
+                case ".txt": SaveAsTxt(); break;
                 case ".rtf": SaveAsRtf(); break;
-                case ".hdt": SaveAsCustom(); break;
-                default: SaveAsText(); break;
+                case ".hdt": SaveAsHdt(); break;
+                case ".html": SaveAsHtml(); break;
+                default: SaveAsTxt(); break;
             }
         }
 
@@ -38,7 +40,7 @@ namespace HydroText
         {
             SaveFileDialog dlg = new SaveFileDialog
             {
-                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|All Files (*.*)|*.*",
+                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|HTML Files (*.html)|*.html|All Files (*.*)|*.*",
                 Title = "Save As",
                 DefaultExt = "txt"
             };
@@ -48,7 +50,7 @@ namespace HydroText
 
             filename = dlg.FileName;
 
-            // Add default extension if user didnt type one
+            // Add default extension if user didn't type one
             string ext = Path.GetExtension(filename).ToLower();
             if (string.IsNullOrEmpty(ext))
             {
@@ -57,6 +59,7 @@ namespace HydroText
                     case 1: ext = ".txt"; break;
                     case 2: ext = ".rtf"; break;
                     case 3: ext = ".hdt"; break;
+                    case 4: ext = ".html"; break;
                     default: ext = ".txt"; break;
                 }
                 filename += ext;
@@ -65,8 +68,7 @@ namespace HydroText
             SaveFile();
         }
 
-
-        private void SaveAsText()
+        private void SaveAsTxt()
         {
             try
             {
@@ -85,7 +87,7 @@ namespace HydroText
             try
             {
                 TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
-                using (FileStream fs = new FileStream(filename, FileMode.Create))
+                using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
                 {
                     range.Save(fs, DataFormats.Rtf);
                 }
@@ -97,12 +99,12 @@ namespace HydroText
             }
         }
 
-        private void SaveAsCustom()
+        private void SaveAsHdt()
         {
             try
             {
                 TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
-                using (FileStream fs = new FileStream(filename, FileMode.Create))
+                using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
                 {
                     range.Save(fs, DataFormats.Xaml);
                 }
@@ -111,6 +113,33 @@ namespace HydroText
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saving Hydro Text file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SaveAsHtml()
+        {
+            try
+            {
+                // Make sure the document is not empty
+                if (MainTextBox.Document.Blocks.Count == 0)
+                {
+                    MainTextBox.Document.Blocks.Add(new Paragraph(new Run("")));
+                }
+
+                // Convert the FlowDocument to XAML string
+                string xaml = System.Windows.Markup.XamlWriter.Save(MainTextBox.Document);
+
+                // Convert XAML string to HTML
+                string html = MyNet.Xaml.Html.HtmlFromXamlConverter.ConvertXamlToHtml(xaml);
+
+                // Save HTML to file
+                File.WriteAllText(filename, html);
+
+                MessageBox.Show("File saved as HTML successfully.", "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving HTML file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -127,25 +156,58 @@ namespace HydroText
 
             filename = dlg.FileName;
 
+            string ext = Path.GetExtension(filename).ToLower();
             try
             {
-                TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
-
-                using (FileStream fs = new FileStream(filename, FileMode.Open))
+                switch (ext)
                 {
-                    string ext = Path.GetExtension(filename).ToLower();
-
-                    if (ext == ".rtf")
-                        range.Load(fs, DataFormats.Rtf);
-                    else if (ext == ".hdt")
-                        range.Load(fs, DataFormats.Xaml);
-                    else
-                        range.Load(fs, DataFormats.Text);
+                    case ".txt":
+                        LoadTxt(filename);
+                        break;
+                    case ".rtf":
+                        LoadRtf(filename);
+                        break;
+                    case ".hdt":
+                        LoadHdt(filename);
+                        break;
+                    case ".html":
+                        
+                        break;
+                    default:
+                        LoadTxt(filename);
+                        break;
                 }
             }
-            catch (Exception ex) // catch everything to avoid crashing
+            catch (Exception ex)
             {
-                MessageBox.Show($"Error reading file: {ex.Message} ", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                MessageBox.Show($"Error reading file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void LoadTxt(string path)
+        {
+            MainTextBox.Document.Blocks.Clear();
+            string text = File.ReadAllText(path);
+            MainTextBox.Document.Blocks.Add(new Paragraph(new Run(text)));
+        }
+
+        private void LoadRtf(string path)
+        {
+            MainTextBox.Document.Blocks.Clear();
+            TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                range.Load(fs, DataFormats.Rtf);
+            }
+        }
+
+        private void LoadHdt(string path)
+        {
+            MainTextBox.Document.Blocks.Clear();
+            TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                range.Load(fs, DataFormats.Xaml);
             }
         }
 
@@ -158,5 +220,6 @@ namespace HydroText
         {
             SaveAsFile();
         }
+
     }
 }

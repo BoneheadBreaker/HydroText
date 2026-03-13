@@ -15,10 +15,10 @@
             <ColumnDefinition Width="13*"/>
             <ColumnDefinition Width="187*"/>
         </Grid.ColumnDefinitions>
-        <RichTextBox x:Name="MainTextBox" Grid.Row="1" Grid.ColumnSpan="2" Background="#FF252525" Foreground="White" Margin="0,2,0,-2">
+        <RichTextBox x:Name="MainTextBox" Grid.Row="1" Grid.ColumnSpan="2" Background="#FF252525" Foreground="White" Margin="10,10,10,10">
             <FlowDocument>
                 <Paragraph>
-                    <Run Text="RichTextBox"/>
+                    <Run Text=""/>
                 </Paragraph>
             </FlowDocument>
         </RichTextBox>
