@@ -22,13 +22,22 @@
                 </Paragraph>
             </FlowDocument>
         </RichTextBox>
-        <DockPanel Background="#FF191919" LastChildFill="False" Margin="0,0,0,3" Grid.ColumnSpan="2"/>
+        <DockPanel Background="#FF191919" LastChildFill="False" Grid.ColumnSpan="2" Margin="0,0,0,3"/>
         <Menu Background="#FF191919" Grid.ColumnSpan="2">
             <MenuItem x:Name="FileMenu" Header="File" FontSize="20" Foreground="White">
                 <MenuItem x:Name="OpenFolder" Header="Open" Click="OpenFile_Click" FontSize="12" Foreground="White" Background="Black"/>
                 <MenuItem x:Name="SaveFolder" Header="Save" Background="Black" Foreground="White" Click="SaveFolder_Click"/>
                 <MenuItem x:Name="SaveAsFolder" Header="Save As" Click="SaveAsFolder_Click" Background="Black" Foreground="White"/>
             </MenuItem>
+            <ToggleButton Command="EditingCommands.ToggleBold" CommandTarget="{Binding ElementName=rtbEditor}" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#FF191919">
+                <TextBlock FontWeight="Bold"><Run Text="B"/></TextBlock>
+            </ToggleButton>
+            <ToggleButton Command="EditingCommands.ToggleItalic" CommandTarget="{Binding ElementName=rtbEditor}" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#FF191919">
+                <TextBlock FontStyle="Italic"><Run Text="I"/></TextBlock>
+            </ToggleButton>
+            <ToggleButton Command="EditingCommands.ToggleUnderline" CommandTarget="{Binding ElementName=rtbEditor}" HorizontalAlignment="Right" VerticalAlignment="Top" Foreground="#FF191919">
+                <TextBlock TextDecorations="Underline"><Run Text="U"/></TextBlock>
+            </ToggleButton>
         </Menu>
 
     </Grid>
