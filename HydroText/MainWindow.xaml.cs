@@ -32,6 +32,7 @@ namespace HydroText
                 case ".rtf": SaveAsRtf(); break;
                 case ".hdt": SaveAsHdt(); break;
                 case ".html": SaveAsHtml(); break;
+                case ".xaml": SaveAsXaml(); break;
                 default: SaveAsTxt(); break;
             }
         }
@@ -40,7 +41,7 @@ namespace HydroText
         {
             SaveFileDialog dlg = new SaveFileDialog
             {
-                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|HTML Files (*.html)|*.html|All Files (*.*)|*.*",
+                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|HTML Files (*.html)|*.html|XAML Files (*.xaml)|*.xaml|All Files (*.*)|*.*",
                 Title = "Save As",
                 DefaultExt = "txt"
             };
@@ -60,6 +61,7 @@ namespace HydroText
                     case 2: ext = ".rtf"; break;
                     case 3: ext = ".hdt"; break;
                     case 4: ext = ".html"; break;
+                    case 5: ext = ".xaml"; break;
                     default: ext = ".txt"; break;
                 }
                 filename += ext;
@@ -96,6 +98,23 @@ namespace HydroText
             catch (Exception ex)
             {
                 MessageBox.Show($"Error saving RTF file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void SaveAsXaml()
+        {
+            try
+            {
+                TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+                using (FileStream fs = new FileStream(filename, FileMode.Create, FileAccess.Write))
+                {
+                    range.Save(fs, DataFormats.Xaml);
+                }
+                MessageBox.Show("File saved as XAML successfully.", "Save", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Error saving XAML file: {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
         }
 
@@ -147,7 +166,7 @@ namespace HydroText
         {
             OpenFileDialog dlg = new OpenFileDialog
             {
-                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|All Files (*.*)|*.*",
+                Filter = "Text Files (*.txt)|*.txt|Rich Text Files (*.rtf)|*.rtf|Hydro Text Files (*.hdt)|*.hdt|xaml Files (*.xaml)|*.xaml|All Files (*.*)|*.*",
                 Title = "Open File"
             };
 
@@ -170,8 +189,8 @@ namespace HydroText
                     case ".hdt":
                         LoadHdt(filename);
                         break;
-                    case ".html":
-                        
+                    case ".xaml":
+                        LoadXaml(filename);
                         break;
                     default:
                         LoadTxt(filename);
@@ -198,6 +217,15 @@ namespace HydroText
             using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
             {
                 range.Load(fs, DataFormats.Rtf);
+            }
+        }
+        private void LoadXaml(string path)
+        {
+            MainTextBox.Document.Blocks.Clear();
+            TextRange range = new TextRange(MainTextBox.Document.ContentStart, MainTextBox.Document.ContentEnd);
+            using (FileStream fs = new FileStream(path, FileMode.Open, FileAccess.Read))
+            {
+                range.Load(fs, DataFormats.Xaml);
             }
         }
 
